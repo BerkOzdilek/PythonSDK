@@ -7,7 +7,7 @@ def readme():
 
 
 setup(name='ivencloud',
-      version='0.1',
+      version='0.1.2',
       # url='github',
       author='Berk Ozdilek',
       author_email='biozdilek@gmail.com',

@@ -12,7 +12,7 @@ data_url = "http://demo.iven.io/data"
 api_key = None
 break_loop = False
 freq = 0
-loop_data = None
+isFreqSet = False
 
 
 def activate_device(secret_key, device_uid):
@@ -43,12 +43,12 @@ def activate_device(secret_key, device_uid):
 def send_data(datas):
     if api_key is not None:
         headers = {'API-KEY': api_key, 'Content-Type': "application/json"}
-        payload = {'data': [{'dataArray': [], 'at': 'now'}]}
+        payload = {"data": []}
+        payload['data'].append(datas)
+        if isFreqSet:
+            payload['data'].append({"task": 0})
 
-        for key, value in datas.iteritems():
-            payload['data'][0]['dataArray'].append({key: value})
-
-        r = requests.post(data_url, data=json.dumps(payload), headers=headers)
+        r = requests.post(data_url, data=json.dumps(payload), headers=headers) # add null check
         ir = IvenResponse()
         ir.status = r.status_code
         if r.status_code < 500 and 'application/json' in r.headers['Content-Type']:
@@ -57,6 +57,10 @@ def send_data(datas):
                 ir.description = j['description']
             if 'ivenCode' in j:
                 ir.iven_code = j['ivenCode']
+            if 'task' in j:
+                if j['ivenCode'] == 10180:  # change this
+                    global freq
+                    freq = j['task']
             if 'message' in j:
                 ir.message = j['message']
                 if 'UPDATE_REQUIRED' in ir.message:
@@ -66,39 +70,14 @@ def send_data(datas):
         return ir
 
 
-def send_data_wloop(callback):
+def send_data_wloop(data, frequency, callback):
+    global freq
+    freq = frequency
     while break_loop is False:
-        if api_key is not None and loop_data is not None:
-            headers = {'API-KEY': api_key, 'Content-Type': "application/json"}
-            payload = {'data': [{'dataArray': [], 'at': 'now'}]}
-
-            for key, value in loop_data.iteritems():
-                payload['data'][0]['dataArray'].append({key: value})
-
-            r = requests.post(data_url, data=json.dumps(payload), headers=headers)
-            ir = IvenResponse()
-            ir.status = r.status_code
-            if r.status_code < 500 and 'application/json' in r.headers['Content-Type']:
-                j = r.json()
-                if 'description' in j:
-                    ir.description = j['description']
-                if 'ivenCode' in j:
-                    ir.iven_code = j['ivenCode']
-                if 'message' in j:
-                    ir.message = j['message']
-                    if 'UPDATE_REQUIRED' in ir.message:
-                        ir.need_firm_update = True
-                    if 'CONFIGURATION_UPDATE_REQUIRED' in ir.message:
-                        ir.need_conf_update = True
+        if api_key is not None and data is not None:
+            ir = send_data(data)
             callback(ir)
             sleep(freq)
-        if loop_data is None:
-            callback(None)
-
-
-def set_data_tosend(datas):
-    global loop_data
-    loop_data = datas
 
 
 def set_frequency(_freq):
