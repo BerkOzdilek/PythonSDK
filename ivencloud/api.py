@@ -42,47 +42,60 @@ def activate_device(secret_key, device_uid):
 
 def send_data(datas):
     if api_key is not None:
-        headers = {'API-KEY': api_key, 'Content-Type': "application/json"}
-        payload = {"data": []}
-        payload['data'].append(datas)
-        if isFreqSet:
-            payload['data'].append({"task": 0})
-
-        r = requests.post(data_url, data=json.dumps(payload), headers=headers) # add null check
-        ir = IvenResponse()
-        ir.status = r.status_code
-        if r.status_code < 500 and 'application/json' in r.headers['Content-Type']:
-            j = r.json()
-            if 'description' in j:
-                ir.description = j['description']
-            if 'ivenCode' in j:
-                ir.iven_code = j['ivenCode']
-            if 'task' in j:
-                if j['ivenCode'] == 10180:  # change this
-                    global freq
-                    freq = j['task']
-            if 'message' in j:
-                ir.message = j['message']
-                if 'UPDATE_REQUIRED' in ir.message:
-                    ir.need_firm_update = True
-                if 'CONFIGURATION_UPDATE_REQUIRED' in ir.message:
-                    ir.need_conf_update = True
-        return ir
+        if isinstance(datas, dict) and bool(datas):
+            headers = {'API-KEY': api_key, 'Content-Type': "application/json"}
+            payload = {"data": []}
+            payload['data'].append(datas)
+            if isFreqSet:
+                # TODO: need to change
+                payload['data'].append({"task": 0})
+            r = requests.post(data_url, data=json.dumps(payload), headers=headers) # add null check
+            ir = IvenResponse()
+            ir.status = r.status_code
+            if r.status_code < 500 and 'application/json' in r.headers['Content-Type']:
+                j = r.json()
+                if 'description' in j:
+                    ir.description = j['description']
+                if 'ivenCode' in j:
+                    ir.iven_code = j['ivenCode']
+                if 'task' in j:
+                    if j['ivenCode'] == 10180:  # change this
+                        global freq
+                        freq = j['task']
+                if 'message' in j:
+                    ir.message = j['message']
+                    if 'UPDATE_REQUIRED' in ir.message:
+                        ir.need_firm_update = True
+                    if 'CONFIGURATION_UPDATE_REQUIRED' in ir.message:
+                     ir.need_conf_update = True
+            return ir
+        else:
+            # datas is NULL or not valid format
+            return [None, 1]
+    else:
+        # Api key is not set
+        return [None, 2]
 
 
 def send_data_wloop(data, frequency, callback):
-    global freq
-    freq = frequency
-    while break_loop is False:
-        if api_key is not None and data is not None:
-            ir = send_data(data)
-            callback(ir)
-            sleep(freq)
+    if set_frequency(frequency) is True:
+        global break_loop
+        while break_loop is False:
+            if api_key is not None and data is not None:
+                ir = send_data(data)
+                callback(ir)
+                sleep(freq)
+        break_loop = False
+        return True
+    return False
 
 
 def set_frequency(_freq):
-    global freq
-    freq = _freq
+    if _freq > 0:
+        global freq
+        freq = _freq
+        return True
+    return False
 
 
 def break_sendloop():

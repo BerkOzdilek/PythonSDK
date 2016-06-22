@@ -8,14 +8,19 @@ def readme():
 
 setup(name='ivencloud',
       version='0.1.2',
-      # url='github',
+      url='https://github.com/BerkOzdilek/PythonSDK',
       author='Berk Ozdilek',
       author_email='biozdilek@gmail.com',
       packages=['ivencloud'],
       install_requires=[
           'requests'],
       description='connect your device to iven cloud',
-      keywords='iven cloud iot',
-      long_description=readme()
+      keywords='iven iot',
+      long_description=readme(),
+      classifiers=[
+          'Programming Language :: Python :: 2.7',
+          'Development Status :: 3 - Alpha'],
+      test_suite='nose.collector',
+      tests_require=['nose']
       )
 
