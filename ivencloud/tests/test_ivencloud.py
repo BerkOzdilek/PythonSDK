@@ -8,6 +8,14 @@ class TestIvencloud(TestCase):
         s = ivencloud.activate_device(None, None)
         self.assertTrue(s is None)
 
+    def test_activate_ns(self):
+        s = ivencloud.activate_device(0, 0)
+        self.assertTrue(s is None)
+
+    def test_activate_nss(self):
+        s = ivencloud.activate_device("", "")
+        self.assertTrue(s is None)
+
     def test_senddata(self):
         api.api_key = None
         s = ivencloud.send_data(None)

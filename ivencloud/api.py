@@ -16,7 +16,9 @@ isFreqSet = False
 
 
 def activate_device(secret_key, device_uid):
-    if device_uid is not None and secret_key is not None:
+    if device_uid is not None and isinstance(device_uid, str) and \
+                    secret_key is not None and isinstance(secret_key, str) and \
+            bool(device_uid) and bool(secret_key):
         global api_key
         hashed = hmac.new(secret_key, device_uid, sha1)
         activation_code = hashed.digest().encode("hex")
