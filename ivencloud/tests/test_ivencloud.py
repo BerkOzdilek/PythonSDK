@@ -1,9 +1,18 @@
+""""
+Unit Tests come here
+
+Run following command to run all the tests: python setup.py test
+
+"""
+
+
 from unittest import TestCase
 import ivencloud
 from ivencloud import api
 
 
 class TestIvencloud(TestCase):
+
     def test_activate(self):
         s = ivencloud.activate_device(None, None)
         self.assertTrue(s is None)
