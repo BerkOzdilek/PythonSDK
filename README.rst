@@ -1,3 +1,3 @@
-Hello, here is how to connect iven cloud
-
-Enjoy!
+# python SDK
+# we are on BETA
+# Coming soon

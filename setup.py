@@ -7,8 +7,8 @@ def readme():
 
 
 setup(name='ivencloud',
-      version='0.1.5',
-      url='https://github.com/BerkOzdilek/PythonSDK',
+      version='0.1.6',
+      url='https://github.com/IvenProductCloud/PythonSDK',
       author='Berk Ozdilek',
       author_email='biozdilek@gmail.com',
       packages=['ivencloud'],
@@ -21,6 +21,7 @@ setup(name='ivencloud',
           'Programming Language :: Python :: 2.7',
           'Development Status :: 3 - Alpha'],
       test_suite='nose.collector',
-      tests_require=['nose']
+      tests_require=['nose'],
+      license='MIT'
       )
 
