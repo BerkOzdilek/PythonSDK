@@ -1,3 +1,4 @@
-# python SDK
-# we are on BETA
-# Coming soon
+# Install
+pip install ivencloud
+
+Examples can be found in example folder
