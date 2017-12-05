@@ -24,6 +24,7 @@ def set_cloud_address(address):
         data_url = "http://"+base_url+"/data"
 
 
+
 def activate_device(secret_key, device_uid):
     """
     Activates device in Iven Cloud.
@@ -33,9 +34,6 @@ def activate_device(secret_key, device_uid):
     :param device_uid: string
     :return: IvenResponse object on success, None on error
     """
-    print base_url
-    print activation_url
-    print data_url
     if device_uid is not None and isinstance(device_uid, str) and \
                     secret_key is not None and isinstance(secret_key, str) and \
             bool(device_uid) and bool(secret_key):
@@ -44,7 +42,6 @@ def activate_device(secret_key, device_uid):
         # HMAC-SHA1 encryption to get activation code
         hashed = hmac.new(secret_key, device_uid, sha1)
         activation_code = hashed.digest().encode("hex")
-        print activation_code
         headers = {'Activation': activation_code, 'Content-Type': "application/json"}
         r = requests.get(activation_url, headers=headers)
         ir = IvenResponse()
