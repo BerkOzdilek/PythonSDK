@@ -48,7 +48,6 @@ def activate_device(secret_key, device_uid):
         ir.status = r.status_code
         if r.status_code < 500 and 'application/json' in r.headers['Content-Type']:
             j = r.json()
-            print j
             if 'api_key' in j:
                 api_key = j['api_key']
                 ir.api_key = api_key  # this may be wrong reference garbage collector wont delete
