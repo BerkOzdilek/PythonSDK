@@ -2,12 +2,12 @@ from setuptools import setup
 
 
 def readme():
-    with open('README.rst') as f:
+    with open('README.md') as f:
         return f.read()
 
 
 setup(name='ivencloud',
-      version='0.1.6',
+      version='0.1.7',
       url='https://github.com/IvenProductCloud/PythonSDK',
       author='Berk Ozdilek',
       author_email='biozdilek@gmail.com',

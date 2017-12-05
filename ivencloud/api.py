@@ -7,12 +7,21 @@ from models import IvenResponse
 from time import sleep
 
 callback_fxn = None
-activation_url = "http://demo.iven.io/activate/device"
-data_url = "http://demo.iven.io/data"
+base_url = "demo.iven.io"
+activation_url = "http://"+base_url+"/activate/device"
+data_url = "http://"+base_url+"/data"
 api_key = None
 break_loop = False
 freq = 0
 isFreqSet = False
+
+
+def set_cloud_address(address):
+    if address is not None and isinstance(address, str):
+        global base_url, activation_url, data_url
+        base_url = address
+        activation_url = "http://"+base_url+"/activate/device"
+        data_url = "http://"+base_url+"/data"
 
 
 def activate_device(secret_key, device_uid):
@@ -24,7 +33,9 @@ def activate_device(secret_key, device_uid):
     :param device_uid: string
     :return: IvenResponse object on success, None on error
     """
-
+    print base_url
+    print activation_url
+    print data_url
     if device_uid is not None and isinstance(device_uid, str) and \
                     secret_key is not None and isinstance(secret_key, str) and \
             bool(device_uid) and bool(secret_key):
@@ -33,12 +44,14 @@ def activate_device(secret_key, device_uid):
         # HMAC-SHA1 encryption to get activation code
         hashed = hmac.new(secret_key, device_uid, sha1)
         activation_code = hashed.digest().encode("hex")
+        print activation_code
         headers = {'Activation': activation_code, 'Content-Type': "application/json"}
         r = requests.get(activation_url, headers=headers)
         ir = IvenResponse()
         ir.status = r.status_code
         if r.status_code < 500 and 'application/json' in r.headers['Content-Type']:
             j = r.json()
+            print j
             if 'api_key' in j:
                 api_key = j['api_key']
                 ir.api_key = api_key  # this may be wrong reference garbage collector wont delete

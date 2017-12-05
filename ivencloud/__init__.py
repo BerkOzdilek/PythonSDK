@@ -6,7 +6,7 @@ Further examples and guides can be found in iven blog : http://blog.iven.io
 """
 
 
-from .api import activate_device, send_data, send_data_wloop, set_frequency, break_sendloop
+from .api import activate_device, send_data, send_data_wloop, set_frequency, break_sendloop, set_cloud_address
 
 __title__ = 'ivencloud'
 __version__ = '0.1.5'
