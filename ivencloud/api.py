@@ -3,17 +3,12 @@ from hashlib import sha1
 import hmac
 import requests
 import json
-from models import IvenResponse
-from time import sleep
+from models import IvenResponse, Error, Task
 
-callback_fxn = None
-base_url = "demo.iven.io"
+base_url = "staging.iven.io"
 activation_url = "http://"+base_url+"/activate/device"
 data_url = "http://"+base_url+"/data"
 api_key = None
-break_loop = False
-freq = 0
-isFreqSet = False
 
 
 def set_cloud_address(address):
@@ -22,7 +17,6 @@ def set_cloud_address(address):
         base_url = address
         activation_url = "http://"+base_url+"/activate/device"
         data_url = "http://"+base_url+"/data"
-
 
 
 def activate_device(secret_key, device_uid):
@@ -34,6 +28,7 @@ def activate_device(secret_key, device_uid):
     :param device_uid: string
     :return: IvenResponse object on success, None on error
     """
+    response = IvenResponse()
     if device_uid is not None and isinstance(device_uid, str) and \
                     secret_key is not None and isinstance(secret_key, str) and \
             bool(device_uid) and bool(secret_key):
@@ -43,23 +38,22 @@ def activate_device(secret_key, device_uid):
         hashed = hmac.new(secret_key, device_uid, sha1)
         activation_code = hashed.digest().encode("hex")
         headers = {'Activation': activation_code, 'Content-Type': "application/json"}
+
         r = requests.get(activation_url, headers=headers)
-        ir = IvenResponse()
-        ir.status = r.status_code
+        response.status = r.status_code
         if r.status_code < 500 and 'application/json' in r.headers['Content-Type']:
-            j = r.json()
-            if 'api_key' in j:
-                api_key = j['api_key']
-                ir.api_key = api_key  # this may be wrong reference garbage collector wont delete
-            if 'description' in j:
-                ir.description = j['description']
-            if 'device_uid' in j:
-                ir.device_uid = j['device_uid']
-            if 'ivenCode' in j:
-                ir.iven_code = j['ivenCode']
-        return ir
+            response_body = r.json()
+            if 'api_key' in response_body:
+                api_key = response_body['api_key']
+                response.api_key = api_key
+            if 'description' in response_body:
+                response.description = response_body['description'].encode('utf-8')
+            if 'ivenCode' in response_body:
+                response.iven_code = response_body['ivenCode']
     else:
-        return None  # TODO: Add error result codes
+        response.error = Error(0, "Secret key or device_uid is not valid")
+
+    return response
 
 
 def send_data(datas):
@@ -70,89 +64,54 @@ def send_data(datas):
     :param datas: dictionary
     :return: IvenResponse object on success, error codes on error
     """
-    if api_key is not None:
-        if isinstance(datas, dict) and bool(datas):
-            headers = {'API-KEY': api_key, 'Content-Type': "application/json"}
 
-            # turn data into json string
-            payload = {"data": []}
-            payload['data'].append(datas)
-            if isFreqSet:
-                # TODO: need to change
-                payload['data'].append({"task": 0})
-            r = requests.post(data_url, data=json.dumps(payload), headers=headers)  # TODO:add null check
-            ir = IvenResponse()
-            ir.status = r.status_code
+    payload = {"data": []}
+    payload['data'].append(datas)
+
+    return send_data_request(payload)
+
+
+def task_done(task_iven_code):
+    payload = {
+        "iven_code": str(task_iven_code),
+        "data": [{"FEED": "TD"}]
+    }
+
+    return send_data_request(payload)
+
+
+def send_data_request(payload):
+    response = IvenResponse()
+    if api_key is not None:
+        if isinstance(payload, dict):
+            headers = {'API-KEY': api_key, 'Content-Type': "application/json"}
+            r = requests.post(data_url, data=json.dumps(payload), headers=headers)
+            response.status = r.status_code
             if r.status_code < 500 and 'application/json' in r.headers['Content-Type']:
-                j = r.json()
-                if 'description' in j:
-                    ir.description = j['description']
-                if 'ivenCode' in j:
-                    ir.iven_code = j['ivenCode']
-                if 'task' in j:
-                    if j['ivenCode'] == 10180:  # change this
-                        global freq
-                        freq = j['task']
-                if 'message' in j:
-                    ir.message = j['message']
-                    if 'UPDATE_REQUIRED' in ir.message:
-                        ir.need_firm_update = True
-                    if 'CONFIGURATION_UPDATE_REQUIRED' in ir.message:
-                     ir.need_conf_update = True
-            return ir
+                response_body = r.json()
+                if 'description' in response_body:
+                    response.description = response_body['description'].encode('utf-8')
+                elif 'message' in response_body:
+                    response.description = response_body['message'].encode('utf-8')
+                    if 'UPDATE_REQUIRED' in response_body['message']:
+                        response.need_firm_update = True
+                    if 'CONFIGURATION_UPDATE_REQUIRED' in response_body['message']:
+                        response.need_conf_update = True
+
+                if 'ivenCode' in response_body:
+                    response.iven_code = response_body['ivenCode']
+
+                    if response.iven_code > 1000:
+                        task = None
+                        if 'task' in response_body:
+                            task = response_body['task'].encode('utf-8')
+                        response.task = Task(response_body['ivenCode'], task)
         else:
             # datas is NULL or not valid format
-            return [None, 1]  # TODO: Change return type
+            response.error = Error(0, "Data is not valid format")
     else:
         # Api key is not set
-        return [None, 2]
+        response.error = Error(0, "API-KEY is not set")
 
-
-def send_data_wloop(data, frequency, callback):
-    """
-    *** This function is blocking ***
-    Sends the given data repeatedly. To stop sending data call break_sendloop function in
-    the callback
-
-    :param data: dictionary
-    :param frequency: int as seconds
-    :param callback: function(param)
-    :return:
-    """
-
-    if set_frequency(frequency) is True:
-        global break_loop
-        while break_loop is False:
-            if api_key is not None and data is not None:
-                ir = send_data(data)
-                callback(ir)  # TODO: check callback is not null
-                sleep(freq)
-        break_loop = False
-        return True
-    return False
-
-
-def set_frequency(_freq):
-    """
-    Sets time interval for send_data_wloop function
-
-    :param _freq: int as seconds
-    :return: True on success
-    """
-    if _freq > 0:
-        global freq
-        freq = _freq
-        return True
-    return False
-
-
-def break_sendloop():
-    """
-    Breaks the next while loop in the send_data_wloop function
-    Call this method on the callback of send_data_wloop function
-
-    :return: void
-    """
-    global break_loop
-    break_loop = True
+    return response
 

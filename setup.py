@@ -7,7 +7,7 @@ def readme():
 
 
 setup(name='ivencloud',
-      version='0.1.7',
+      version='0.2.0',
       url='https://github.com/IvenProductCloud/PythonSDK',
       author='Berk Ozdilek',
       author_email='biozdilek@gmail.com',
